@@ -1,0 +1,27 @@
+# --- General ---
+.DS_Store
+Thumbs.db
+
+# --- Visual Studio / .NET ---
+[Bb]in/
+[Oo]bj/
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.cache
+*.pdb
+*.dll
+*.exe
+
+# --- IDEs ---
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.history/
