@@ -36,20 +36,6 @@ public static class Loader
         return Assembly.LoadFrom(assemblyPath);
     }
 
-    public static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-    {
-        try
-        {
-            // running GetTypes() forces the CLR to know about dependencies thus calling AssemblyResolve to load them
-            return assembly.GetTypes();
-        }
-        catch (ReflectionTypeLoadException ex)
-        {
-            // Return only the types that were successfully loaded
-            return ex.Types.Where(t => t != null)!;
-        }
-    }
-
     public static IEnumerable<Assembly> GetAssemblyReferences()
     {
         var references = new List<Assembly>();
@@ -75,5 +61,25 @@ public static class Loader
 
         return references;
     }
-}
 
+    // GTODO: Maybe I should check if the baseClass is DbContext instead
+    // Find the first non-abstract class that inherits from DbContext (using name check to avoid dependency mismatch)
+    public static Type? FindDbContext(Assembly assembly) =>
+         GetLoadableTypes(assembly).FirstOrDefault(t =>
+            t.IsClass && !t.IsAbstract &&
+            (t.BaseType?.Name == "DbContext" || t.BaseType?.FullName == "Microsoft.EntityFrameworkCore.DbContext"));
+
+    private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+    {
+        try
+        {
+            // running GetTypes() forces the CLR to know about dependencies thus calling AssemblyResolve to load them
+            return assembly.GetTypes();
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            // Return only the types that were successfully loaded
+            return ex.Types.Where(t => t != null)!;
+        }
+    }
+}
