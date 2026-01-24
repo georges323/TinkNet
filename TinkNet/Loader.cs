@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.Loader;
 
 namespace TinkNet;
 
@@ -36,7 +35,7 @@ public static class Loader
         return Assembly.LoadFrom(assemblyPath);
     }
 
-    public static IEnumerable<Assembly> GetAssemblyReferences()
+    public static IEnumerable<Assembly> GetAssemblyDependencies()
     {
         var references = new List<Assembly>();
 
@@ -44,7 +43,7 @@ public static class Loader
 
         foreach (var dll in Directory.GetFiles(_basePath, "*.dll"))
         {
-            // Don't reload the main assembly or system ones we might have trouble with
+            // Ignore target assembly
             if (Path.GetFileName(dll).Equals(Path.GetFileName(_dllPath), StringComparison.OrdinalIgnoreCase)) continue;
 
             try
@@ -54,7 +53,6 @@ public static class Loader
             }
             catch
             {
-                // Ignore assembly if it can't be loaded
                 continue;
             }
         }
@@ -63,13 +61,19 @@ public static class Loader
     }
 
     // GTODO: Maybe I should check if the baseClass is DbContext instead
-    // Find the first non-abstract class that inherits from DbContext (using name check to avoid dependency mismatch)
-    public static Type? FindDbContext(Assembly assembly) =>
+    public static Type? FindDbContextFromAssembly(Assembly assembly) =>
          GetLoadableTypes(assembly).FirstOrDefault(t =>
             t.IsClass && !t.IsAbstract &&
             (t.BaseType?.Name == "DbContext" || t.BaseType?.FullName == "Microsoft.EntityFrameworkCore.DbContext"));
 
-    private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+    public static IEnumerable<string> GetPublicNamespacesFromAssemblies(IEnumerable<Assembly> assemblies) => assemblies
+        .SelectMany(GetLoadableTypes)
+        .Where(t => t.IsPublic && !string.IsNullOrEmpty(t.Namespace))
+        .Select(t => t.Namespace!)
+        .Distinct();
+        
+
+    public static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
     {
         try
         {

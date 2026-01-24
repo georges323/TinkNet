@@ -19,7 +19,7 @@ catch (Exception ex)
 
 // Initialize Engine
 var engine = new ScriptEngine();
-var dbContextType = Loader.FindDbContext(assembly);
+var dbContextType = Loader.FindDbContextFromAssembly(assembly);
 
 engine.Initialize(assembly, dbContextType);
 

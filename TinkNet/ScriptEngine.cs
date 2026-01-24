@@ -36,13 +36,23 @@ public class ScriptEngine
         _options = _options.AddReferences(targetAssembly);
 
         // Add dependencies found in the same folder
-        var dependentReferences = Loader.GetAssemblyReferences();
+        var dependentReferences = Loader.GetAssemblyDependencies();
         if (dependentReferences.Any())
         {
             _options = _options.AddReferences(dependentReferences);
         }
 
-        // Import DbContext namespace if available
+        // Auto-import all public namespaces from ALL assemblies (Main + Dependencies)
+        var allAssemblies = new List<Assembly> { targetAssembly };
+        if (dependentReferences.Any())
+        {
+            allAssemblies.AddRange(dependentReferences);
+        }
+
+        var namespaces = Loader.GetPublicNamespacesFromAssemblies(allAssemblies);
+        _options = _options.AddImports(namespaces);
+
+        // Also import DbContext namespace explicitly if found (just to be safe, though likely covered above)
         if (dbContextType?.Namespace != null)
         {
             _options = _options.AddImports(dbContextType.Namespace);

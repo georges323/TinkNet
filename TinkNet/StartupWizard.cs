@@ -1,4 +1,6 @@
 using Spectre.Console;
+using System.Collections;
+using System.Reflection;
 
 namespace TinkNet;
 
@@ -59,14 +61,71 @@ public static class StartupWizard
 
     public static void DisplayResult(object? result, long elapsedMs)
     {
-        if (result == null) return;
-        
-        string resultText = result.ToString() ?? "null";
-        
-        AnsiConsole.Write(new Panel(resultText)
-            .Header($"Result - {elapsedMs}ms")
-            .Expand()
-            .BorderColor(Color.Green));
+        if (result == null)
+        {
+            AnsiConsole.MarkupLine("[italic grey]null[/]");
+            return;
+        }
+
+        if (result is IEnumerable collection && result is not string)
+        {
+            var items = collection.Cast<object>().ToList();
+            if (!items.Any())
+            {
+                AnsiConsole.MarkupLine("[italic]Empty collection[/]");
+                return;
+            }
+
+            var table = new Table().Border(TableBorder.Rounded);
+            var firstItem = items.First();
+            var firstType = firstItem.GetType();
+
+            var properties = firstType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                      .Where(p => p.CanRead)
+                                      .ToArray();
+
+            if (properties.Length == 0)
+            {
+                // used for maybe non-complex types like List<int>
+                table.AddColumn("Value");
+                foreach (var item in items.Take(20))
+                {
+                    table.AddRow(Markup.Escape(item?.ToString() ?? ""));
+                }
+            }
+            else
+            {
+                foreach (var prop in properties)
+                    table.AddColumn(prop.Name);
+
+                foreach (var item in items.Take(20))
+                {
+                    var values = properties.Select(p =>
+                    {
+                        try
+                        {
+                            var val = p.GetValue(item);
+                            return Markup.Escape(val?.ToString() ?? "<null>");
+                        }
+                        catch
+                        {
+                            return "[red]Error[/]";
+                        }
+                    }).ToArray();
+                    table.AddRow(values);
+                }
+            }
+
+            AnsiConsole.Write(table);
+            AnsiConsole.MarkupLine($"[grey]Total Items: {items.Count} (Showed {Math.Min(items.Count, 20)}) - {elapsedMs}ms[/]");
+        }
+        else
+        {
+            AnsiConsole.Write(new Panel(Markup.Escape(result.ToString() ?? ""))
+                .Header($"Result - {elapsedMs}ms")
+                .Expand()
+                .BorderColor(Color.Green));
+        }
     }
 
     public static void DisplayError(string title, string message)
