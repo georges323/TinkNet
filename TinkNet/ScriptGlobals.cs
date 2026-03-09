@@ -1,14 +1,27 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 
 namespace TinkNet;
 
 public class ScriptGlobals
 {
+    public bool ShowSql { get; set; } = true;
+
     public T GetContext<T>(string connectionString, DbProvider provider) where T : DbContext
     {
         var builder = new DbContextOptionsBuilder<T>();
+        
+        // Add custom logger to intercept SQL
+        var loggerFactory = LoggerFactory.Create(builder => 
+        {
+            builder.AddProvider(new SqlConsoleLoggerProvider(this));
+            builder.SetMinimumLevel(LogLevel.Information);
+        });
+        
+        builder.UseLoggerFactory(loggerFactory);
+        builder.EnableSensitiveDataLogging();
         
         switch (provider)
         {

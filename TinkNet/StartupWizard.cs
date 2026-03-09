@@ -81,6 +81,7 @@ public static class StartupWizard
 
         AnsiConsole.MarkupLine($"[grey]Initializing context with {provider}...[/]");
         AnsiConsole.MarkupLine($"[grey]You can access your application's {dbContextName} with 'db'...[/]");
+        AnsiConsole.MarkupLine($"[grey]Tip: Type 'ShowSql = false;' anytime to stop printing translated SQL queries.[/]");
         
         // Return the script code to initialize the db variable
         return $"var db = GetContext<{dbContextName}>(\"{connectionString}\", DbProvider.{provider});";
@@ -89,6 +90,7 @@ public static class StartupWizard
     public static void ShowDbHelp(Type dbContextType)
     {
         AnsiConsole.MarkupLine($"[grey]Tip: Use helper: var db = GetContext<{dbContextType.Name}>(\"conn_string\", DbProvider.SqlServer);[/]");
+        AnsiConsole.MarkupLine($"[grey]Tip: Type 'ShowSql = false;' anytime to stop printing translated SQL queries.[/]");
     }
 
     public static void DisplayResult(object? result, long elapsedMs)
