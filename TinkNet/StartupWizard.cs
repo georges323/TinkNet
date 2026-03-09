@@ -91,11 +91,6 @@ public static class StartupWizard
         AnsiConsole.MarkupLine($"[grey]Tip: Use helper: var db = GetContext<{dbContextType.Name}>(\"conn_string\", DbProvider.SqlServer);[/]");
     }
 
-    public static string AskForCode()
-    {
-        return AnsiConsole.Ask<string>("[bold blue]>[/]");
-    }
-
     public static void DisplayResult(object? result, long elapsedMs)
     {
         if (result == null)

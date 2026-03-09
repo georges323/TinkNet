@@ -54,7 +54,7 @@ StartupWizard.DisplayResult("Environment ready. You can now write C# code.", 0);
 
 while (true)
 {
-    var code = StartupWizard.AskForCode();
+    var code = ReplPrompt.ReadCode();
     if (code == "exit") break;
     
     await engine.RunAsync(code);
