@@ -88,10 +88,9 @@ Once initialized, you are dropped into a C# REPL. A variable named `db` is alrea
 
 ## 🛠️ Up Coming Features
 
-1. Code history using arrowkeys and easier editing
-2. Be able to get Linq query SQL translations
-3. More interactive TUI experience for displaying greater and more complex query/linq results
-4. Simpler wizard setup by pointing to appsettings.json or to the target project's appsettings.json
+1. Be able to get Linq query SQL translations
+2. More interactive TUI experience for displaying greater and more complex query/linq results
+3. Simpler wizard setup by pointing to appsettings.json or to the target project's appsettings.json
 
 ## 📄 License
 MIT

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Spectre.Console;
 using System.Collections;
 using System.Reflection;
@@ -11,31 +12,67 @@ public static class StartupWizard
         AnsiConsole.Write(new FigletText("TinkNet").Color(Color.Green));
     }
 
-    public static string AskForDllPath()
+    public static string AskForDllPath(IConfiguration config)
     {
+        var envPath = config["TinkNet:DllPath"] ?? config["TINKNET_DLL_PATH"];
+        if (!string.IsNullOrWhiteSpace(envPath))
+        {
+            AnsiConsole.MarkupLine($"[grey]Loaded DLL path from config: {envPath}[/]");
+            return envPath.Trim('"');
+        }
+
         var dllPath = AnsiConsole.Ask<string>("Path to DLL [bold blue]>[/]");
         return dllPath.Trim('"');
     }
 
-    public static string? AskToConfigureDatabase(Type dbContextType)
+    public static string? AskToConfigureDatabase(Type dbContextType, IConfiguration config)
     {
         AnsiConsole.Write(new Panel(dbContextType.FullName ?? dbContextType.Name)
             .Header("DbContext Found")
             .BorderColor(Color.Green));
 
-        if (!AnsiConsole.Confirm("Do you want to configure the database connection now?"))
+        var envProvider = config["TinkNet:DbProvider"] ?? config["TINKNET_DB_PROVIDER"];
+        var envConnectionString = config["TinkNet:ConnectionString"] ?? config["TINKNET_CONNECTION_STRING"];
+
+        DbProvider provider = DbProvider.SqlServer; // Provide a default
+        bool hasValidEnvProvider = !string.IsNullOrWhiteSpace(envProvider) && Enum.TryParse(envProvider, true, out provider);
+        bool hasEnvConnectionString = !string.IsNullOrWhiteSpace(envConnectionString);
+
+        if (!hasValidEnvProvider || !hasEnvConnectionString)
         {
-            return null;
+            if (!AnsiConsole.Confirm("Do you want to configure the database connection now?"))
+            {
+                return null;
+            }
         }
 
-        var provider = AnsiConsole.Prompt(
-            new SelectionPrompt<DbProvider>()
-                .Title("Select Database Provider")
-                .AddChoices(Enum.GetValues<DbProvider>()));
+        if (hasValidEnvProvider)
+        {
+            AnsiConsole.MarkupLine($"[grey]Loaded database provider from config: {provider}[/]");
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(envProvider))
+            {
+                AnsiConsole.MarkupLine($"[yellow]Warning: Invalid configured DbProvider '{envProvider}'. Falling back to prompt.[/]");
+            }
 
-        // GTODO: Find a good way to read the connection string based on appsettings.json if we run this in the 
-        // target application's directory
-        var connectionString = AnsiConsole.Ask<string>("Enter Connection String:");
+            provider = AnsiConsole.Prompt(
+                new SelectionPrompt<DbProvider>()
+                    .Title("Select Database Provider")
+                    .AddChoices(Enum.GetValues<DbProvider>()));
+        }
+
+        string connectionString;
+        if (hasEnvConnectionString)
+        {
+            AnsiConsole.MarkupLine($"[grey]Loaded connection string from config.[/]");
+            connectionString = envConnectionString!;
+        }
+        else
+        {
+            connectionString = AnsiConsole.Ask<string>("Enter Connection String:");
+        }
         
         // Escape quotes
         connectionString = connectionString.Replace("\"", "\\\"");
@@ -52,11 +89,6 @@ public static class StartupWizard
     public static void ShowDbHelp(Type dbContextType)
     {
         AnsiConsole.MarkupLine($"[grey]Tip: Use helper: var db = GetContext<{dbContextType.Name}>(\"conn_string\", DbProvider.SqlServer);[/]");
-    }
-
-    public static string AskForCode()
-    {
-        return AnsiConsole.Ask<string>("[bold blue]>[/]");
     }
 
     public static void DisplayResult(object? result, long elapsedMs)
